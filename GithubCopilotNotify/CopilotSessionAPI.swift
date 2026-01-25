@@ -55,21 +55,20 @@ struct CopilotTrial: Codable {
 
 class CopilotSessionAPIClient {
     private let cookieStorage: HTTPCookieStorage
+    private let entitlementURL = "https://github.com/github-copilot/chat/entitlement"
 
     init() {
         self.cookieStorage = HTTPCookieStorage.shared
     }
 
-    func fetchUsagePercentage() async throws -> Double {
-        let urlString = "https://github.com/github-copilot/chat/entitlement"
-        guard let url = URL(string: urlString) else {
+    private func createEntitlementRequest() throws -> URLRequest {
+        guard let url = URL(string: entitlementURL) else {
             throw URLError(.badURL)
         }
 
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        // Add cookies to request
         if let cookies = cookieStorage.cookies(for: url) {
             let cookieHeaders = HTTPCookie.requestHeaderFields(with: cookies)
             for (key, value) in cookieHeaders {
@@ -80,8 +79,10 @@ class CopilotSessionAPIClient {
             print("⚠️ No cookies found for GitHub")
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        return request
+    }
 
+    private func handleResponse(_ response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
             print("❌ Bad server response (not HTTP)")
             throw URLError(.badServerResponse)
@@ -103,13 +104,12 @@ class CopilotSessionAPIClient {
             }
             throw URLError(.init(rawValue: httpResponse.statusCode))
         }
+    }
 
-        let decoder = JSONDecoder()
+    private func parseEntitlement(from data: Data) throws -> Double {
         do {
-            let entitlement = try decoder.decode(CopilotEntitlement.self, from: data)
+            let entitlement = try JSONDecoder().decode(CopilotEntitlement.self, from: data)
             let remainingPercentage = entitlement.quotas.remaining.premiumInteractionsPercentage
-
-            // API returns percentage REMAINING, we want to show percentage USED
             let usedPercentage = 100.0 - remainingPercentage
 
             let remaining = entitlement.quotas.remaining.premiumInteractions
@@ -126,6 +126,13 @@ class CopilotSessionAPIClient {
             }
             throw error
         }
+    }
+
+    func fetchUsagePercentage() async throws -> Double {
+        let request = try createEntitlementRequest()
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try handleResponse(response, data: data)
+        return try parseEntitlement(from: data)
     }
 
     func hasCookies() -> Bool {
