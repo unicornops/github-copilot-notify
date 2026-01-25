@@ -53,8 +53,17 @@ hdiutil create -srcfolder "$TEMP_DIR" \
 
 # Mount the temporary DMG
 echo "Mounting temporary DMG..."
-MOUNT_DIR=$(hdiutil attach -readwrite -noverify -noautoopen "$TEMP_DMG" | egrep '^/dev/' | sed 1q | awk '{print $3}')
+# Use grep to find the line with /Volumes and extract the mount point
+# The mount point is the last field after tabs, which may contain spaces
+MOUNT_DIR=$(hdiutil attach -readwrite -noverify -noautoopen "$TEMP_DMG" | grep '/Volumes/' | sed 's/.*\t//')
 echo "Mounted at: $MOUNT_DIR"
+
+if [ -z "$MOUNT_DIR" ]; then
+    echo "Error: Failed to mount DMG or extract mount point"
+    rm -rf "$TEMP_DIR"
+    rm -f "$TEMP_DMG"
+    exit 1
+fi
 
 # Set DMG icon positions and appearance (optional, using AppleScript)
 echo "Configuring DMG appearance..."
