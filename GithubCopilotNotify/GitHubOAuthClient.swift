@@ -135,31 +135,51 @@ class GitHubOAuthClient {
         }
     }
 
-    /// Step 2: Poll for access token
-    func pollForAccessToken(deviceCode: String, interval: Int) async throws -> AccessTokenResponse {
+    private func mapErrorToOAuthError(_ errorCode: String) -> OAuthError {
+        switch errorCode {
+        case "expired_token":
+            return OAuthError.expiredToken
+        case "access_denied":
+            return OAuthError.accessDenied
+        case "unsupported_grant_type":
+            return OAuthError.unsupportedGrantType
+        case "incorrect_client_credentials":
+            return OAuthError.incorrectClientCredentials
+        case "incorrect_device_code":
+            return OAuthError.incorrectDeviceCode
+        case "device_flow_disabled":
+            return OAuthError.deviceFlowDisabled
+        default:
+            return OAuthError.unknown(errorCode)
+        }
+    }
+
+    private func createTokenRequest(deviceCode: String) throws -> URLRequest {
         guard let url = URL(string: accessTokenUrl) else {
             throw URLError(.badURL)
         }
 
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: String] = [
+            "client_id": clientId,
+            "device_code": deviceCode,
+            "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
+        ]
+        request.httpBody = try JSONEncoder().encode(body)
+        return request
+    }
+
+    /// Step 2: Poll for access token
+    func pollForAccessToken(deviceCode: String, interval: Int) async throws -> AccessTokenResponse {
         var pollInterval = interval
 
-        // Poll until we get a token or an error
         while true {
-            // Wait for the specified interval
             try await Task.sleep(nanoseconds: UInt64(pollInterval) * 1_000_000_000)
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Accept")
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-            let body: [String: String] = [
-                "client_id": clientId,
-                "device_code": deviceCode,
-                "grant_type": "urn:ietf:params:oauth:grant-type:device_code"
-            ]
-
-            request.httpBody = try JSONEncoder().encode(body)
+            let request = try createTokenRequest(deviceCode: deviceCode)
 
             do {
                 let (data, response) = try await URLSession.shared.data(for: request)
@@ -169,42 +189,23 @@ class GitHubOAuthClient {
                 }
 
                 if httpResponse.statusCode == 200 {
-                    // Success! We got the access token
-                    let decoder = JSONDecoder()
-                    return try decoder.decode(AccessTokenResponse.self, from: data)
+                    return try JSONDecoder().decode(AccessTokenResponse.self, from: data)
                 }
 
-                // Parse error response
-                let decoder = JSONDecoder()
-                let errorResponse = try decoder.decode(AccessTokenErrorResponse.self, from: data)
+                let errorResponse = try JSONDecoder().decode(AccessTokenErrorResponse.self, from: data)
 
                 switch errorResponse.error {
                 case "authorization_pending":
-                    // Continue polling
                     continue
                 case "slow_down":
-                    // Increase interval by 5 seconds and continue
                     pollInterval += 5
                     continue
-                case "expired_token":
-                    throw OAuthError.expiredToken
-                case "access_denied":
-                    throw OAuthError.accessDenied
-                case "unsupported_grant_type":
-                    throw OAuthError.unsupportedGrantType
-                case "incorrect_client_credentials":
-                    throw OAuthError.incorrectClientCredentials
-                case "incorrect_device_code":
-                    throw OAuthError.incorrectDeviceCode
-                case "device_flow_disabled":
-                    throw OAuthError.deviceFlowDisabled
                 default:
-                    throw OAuthError.unknown(errorResponse.error)
+                    throw mapErrorToOAuthError(errorResponse.error)
                 }
             } catch let error as OAuthError {
                 throw error
             } catch {
-                // For other errors, continue polling unless it's a critical error
                 print("Polling error: \(error)")
                 continue
             }

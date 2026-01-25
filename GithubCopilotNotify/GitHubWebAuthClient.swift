@@ -92,11 +92,9 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
 
             var cookieDict: [String: String] = [:]
 
-            for cookie in cookies {
-                if cookie.domain.contains("github.com") {
-                    cookieDict[cookie.name] = cookie.value
-                    print("🍪 Found cookie: \(cookie.name)")
-                }
+            for cookie in cookies where cookie.domain.contains("github.com") {
+                cookieDict[cookie.name] = cookie.value
+                print("🍪 Found cookie: \(cookie.name)")
             }
 
             // Check for required cookies
