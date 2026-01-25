@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.2.0 - 2026-01-25
+#### Features
+- Empty commit for new version - (deb07af) - Rob Lazzurs
+#### Bug Fixes
+- resolve markdownlint violations in AGENTS.md and README.md - (86babfd) - Rob Lazzurs
+- refactor CopilotSessionAPI to resolve SwiftLint function body - (b3d440a) - Rob Lazzurs
+- resolve SwiftLint violations across codebase - (50bf77b) - Rob Lazzurs
+
+- - -
+
 ## v0.1.0 - 2026-01-14
 #### Features
 - Initial commit - (ef5a71f) - Rob Lazzurs
