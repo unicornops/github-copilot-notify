@@ -112,7 +112,9 @@ class CopilotSessionAPIClient {
             // API returns percentage REMAINING, we want to show percentage USED
             let usedPercentage = 100.0 - remainingPercentage
 
-            print("✅ Premium requests: \(entitlement.quotas.remaining.premiumInteractions)/\(entitlement.quotas.limits.premiumInteractions)")
+            let remaining = entitlement.quotas.remaining.premiumInteractions
+            let limit = entitlement.quotas.limits.premiumInteractions
+            print("✅ Premium requests: \(remaining)/\(limit)")
             print("📊 Remaining: \(remainingPercentage)% | Used: \(usedPercentage)%")
             print("📅 Reset date: \(entitlement.quotas.resetDate)")
 

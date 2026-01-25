@@ -59,7 +59,9 @@ class CopilotAPIClient {
         // Try the billing API first (newer endpoint)
         do {
             let billingUsage = try await fetchBillingUsage()
-            print("✅ Billing API success: \(billingUsage.seatBreakdown.activeThisCycle)/\(billingUsage.seatBreakdown.total) = \(billingUsage.usagePercentage)%")
+            let active = billingUsage.seatBreakdown.activeThisCycle
+            let total = billingUsage.seatBreakdown.total
+            print("✅ Billing API success: \(active)/\(total) = \(billingUsage.usagePercentage)%")
             return billingUsage.usagePercentage
         } catch {
             print("⚠️ Billing API failed: \(error)")
