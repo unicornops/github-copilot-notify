@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.2.2 - 2026-01-25
+#### Bug Fixes
+- handle spaces in volume name when parsing DMG mount point - (164e7af) - Rob Lazzurs
+
+- - -
+
 ## v0.2.1 - 2026-01-25
 #### Bug Fixes
 - Second empty commit for build - (7f443c1) - Rob Lazzurs
