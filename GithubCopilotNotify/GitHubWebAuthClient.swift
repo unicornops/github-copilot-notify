@@ -79,9 +79,11 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
 
     private func extractCookies() {
         guard let webView = webView else {
-            continuation?.resume(throwing: AuthError.cookieExtractionFailed)
-            continuation = nil
-            closeWindow()
+            DispatchQueue.main.async { [weak self] in
+                self?.continuation?.resume(throwing: AuthError.cookieExtractionFailed)
+                self?.continuation = nil
+                self?.closeWindowSync()
+            }
             return
         }
 
@@ -107,7 +109,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
                 DispatchQueue.main.async {
                     self.continuation?.resume(returning: cookieDict)
                     self.continuation = nil
-                    self.closeWindow()
+                    self.closeWindowSync()
                 }
             } else {
                 print("⚠️ No user_session cookie found, waiting for login...")
@@ -125,8 +127,9 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         }
     }
 
-    @MainActor
-    private func closeWindow() {
+    private func closeWindowSync() {
+        // Must be called from main thread
+        assert(Thread.isMainThread, "closeWindowSync must be called from main thread")
         window?.close()
         window = nil
         webView = nil
