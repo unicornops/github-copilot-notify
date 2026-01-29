@@ -68,11 +68,15 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         // Check if we're on a GitHub authenticated page
         guard let url = webView.url?.absoluteString else { return }
 
-        print("📍 Navigated to: \(url)")
+        #if DEBUG
+        print("Navigated to: \(url)")
+        #endif
 
         // If user successfully logged in and reached GitHub.com
         if url.hasPrefix("https://github.com/") && !url.contains("/login") && !url.contains("/sessions") {
-            print("✅ Login detected, extracting cookies...")
+            #if DEBUG
+            print("Login detected, extracting cookies...")
+            #endif
             extractCookies()
         }
     }
@@ -96,12 +100,17 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
 
             for cookie in cookies where cookie.domain.contains("github.com") {
                 cookieDict[cookie.name] = cookie.value
-                print("🍪 Found cookie: \(cookie.name)")
             }
+
+            #if DEBUG
+            print("Found \(cookieDict.count) GitHub cookies")
+            #endif
 
             // Check for required cookies
             if cookieDict["user_session"] != nil {
-                print("✅ Successfully extracted session cookies")
+                #if DEBUG
+                print("Successfully extracted session cookies")
+                #endif
 
                 // Save cookies to persistent store for future use
                 self.saveCookiesToPersistentStore(cookies: cookies)
@@ -112,18 +121,25 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
                     self.closeWindowSync()
                 }
             } else {
-                print("⚠️ No user_session cookie found, waiting for login...")
+                #if DEBUG
+                print("No user_session cookie found, waiting for login...")
+                #endif
             }
         }
     }
 
     private func saveCookiesToPersistentStore(cookies: [HTTPCookie]) {
-        // Save cookies to default cookie storage so they persist
-        let cookieStorage = HTTPCookieStorage.shared
-
-        for cookie in cookies where cookie.domain.contains("github.com") {
-            cookieStorage.setCookie(cookie)
-            print("💾 Saved cookie to persistent store: \(cookie.name)")
+        // Save cookies to Keychain for secure persistence
+        do {
+            try KeychainCookieStorage.shared.saveCookies(cookies)
+            #if DEBUG
+            let savedCount = cookies.filter { $0.domain.contains("github.com") }.count
+            print("Saved \(savedCount) cookies to Keychain")
+            #endif
+        } catch {
+            #if DEBUG
+            print("Failed to save cookies to Keychain: \(error)")
+            #endif
         }
     }
 
