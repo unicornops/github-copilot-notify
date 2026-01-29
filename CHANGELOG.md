@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.2.4 - 2026-01-29
+#### Bug Fixes
+- (**security**) enable app sandbox and migrate cookies to Keychain - (ec00c4c) - Rob Lazzurs
+
+- - -
+
 ## v0.2.3 - 2026-01-25
 #### Bug Fixes
 - resolve SIGSEGV crash after successful sign-in - (47cc953) - Rob Lazzurs
