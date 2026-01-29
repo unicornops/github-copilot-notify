@@ -54,11 +54,11 @@ struct CopilotTrial: Codable {
 }
 
 class CopilotSessionAPIClient {
-    private let cookieStorage: HTTPCookieStorage
+    private let keychainStorage: KeychainCookieStorage
     private let entitlementURL = "https://github.com/github-copilot/chat/entitlement"
 
     init() {
-        self.cookieStorage = HTTPCookieStorage.shared
+        self.keychainStorage = KeychainCookieStorage.shared
     }
 
     private func createEntitlementRequest() throws -> URLRequest {
@@ -69,39 +69,43 @@ class CopilotSessionAPIClient {
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        if let cookies = cookieStorage.cookies(for: url) {
-            let cookieHeaders = HTTPCookie.requestHeaderFields(with: cookies)
-            for (key, value) in cookieHeaders {
-                request.setValue(value, forHTTPHeaderField: key)
-            }
-            print("🔍 Making entitlement request with \(cookies.count) cookies")
-        } else {
-            print("⚠️ No cookies found for GitHub")
+        let cookieHeaders = keychainStorage.cookieHeaderFields(for: url)
+        for (key, value) in cookieHeaders {
+            request.setValue(value, forHTTPHeaderField: key)
         }
+
+        #if DEBUG
+        print("Making entitlement request with cookies")
+        #endif
 
         return request
     }
 
     private func handleResponse(_ response: URLResponse, data: Data) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
-            print("❌ Bad server response (not HTTP)")
+            #if DEBUG
+            print("Bad server response (not HTTP)")
+            #endif
             throw URLError(.badServerResponse)
         }
 
-        print("📊 Entitlement API response status: \(httpResponse.statusCode)")
+        #if DEBUG
+        print("Entitlement API response status: \(httpResponse.statusCode)")
+        #endif
 
         if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-            print("❌ Authentication failed - cookies may be expired")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("📄 Response: \(responseString)")
-            }
+            #if DEBUG
+            print("Authentication failed - cookies may be expired")
+            #endif
             throw URLError(.userAuthenticationRequired)
         }
 
         guard httpResponse.statusCode == 200 else {
+            #if DEBUG
             if let responseString = String(data: data, encoding: .utf8) {
-                print("📄 Error response body: \(responseString)")
+                print("Error response body: \(responseString)")
             }
+            #endif
             throw URLError(.init(rawValue: httpResponse.statusCode))
         }
     }
@@ -112,18 +116,22 @@ class CopilotSessionAPIClient {
             let remainingPercentage = entitlement.quotas.remaining.premiumInteractionsPercentage
             let usedPercentage = 100.0 - remainingPercentage
 
+            #if DEBUG
             let remaining = entitlement.quotas.remaining.premiumInteractions
             let limit = entitlement.quotas.limits.premiumInteractions
-            print("✅ Premium requests: \(remaining)/\(limit)")
-            print("📊 Remaining: \(remainingPercentage)% | Used: \(usedPercentage)%")
-            print("📅 Reset date: \(entitlement.quotas.resetDate)")
+            print("Premium requests: \(remaining)/\(limit)")
+            print("Remaining: \(remainingPercentage)% | Used: \(usedPercentage)%")
+            print("Reset date: \(entitlement.quotas.resetDate)")
+            #endif
 
             return usedPercentage
         } catch {
-            print("❌ JSON decode error: \(error)")
+            #if DEBUG
+            print("JSON decode error: \(error)")
             if let responseString = String(data: data, encoding: .utf8) {
-                print("📄 Response body: \(responseString)")
+                print("Response body: \(responseString)")
             }
+            #endif
             throw error
         }
     }
@@ -136,20 +144,13 @@ class CopilotSessionAPIClient {
     }
 
     func hasCookies() -> Bool {
-        guard let url = URL(string: "https://github.com") else { return false }
-        guard let cookies = cookieStorage.cookies(for: url) else { return false }
-
-        return cookies.contains { $0.name == "user_session" }
+        return keychainStorage.hasValidSession()
     }
 
     func clearCookies() {
-        guard let url = URL(string: "https://github.com") else { return }
-        guard let cookies = cookieStorage.cookies(for: url) else { return }
-
-        for cookie in cookies {
-            cookieStorage.deleteCookie(cookie)
-        }
-
-        print("🗑️ Cleared all GitHub cookies")
+        keychainStorage.clearCookies()
+        #if DEBUG
+        print("Cleared all GitHub cookies from Keychain")
+        #endif
     }
 }

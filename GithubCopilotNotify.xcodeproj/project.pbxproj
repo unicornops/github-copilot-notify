@@ -14,6 +14,7 @@
 		48BC94019A3F4F23BEFFF70E /* GitHubOAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D2244C02F744C5B519431C /* GitHubOAuthClient.swift */; };
 		7FA004F482993A5A0BDCAF79 /* GitHubWebAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E86BFF0B2CBA74F75E46B0B /* GitHubWebAuthClient.swift */; };
 		9138FFC26BEA427E90F28977 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E5B12AEE334155BE153823 /* AppDelegate.swift */; };
+		A1B2C3D4E5F64718901234AB /* KeychainCookieStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		69158FC52CD015D8E7CA7B34 /* CopilotSessionAPI.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopilotSessionAPI.swift; sourceTree = "<group>"; };
 		96CF65B19B4A4B958DB86DF4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA358A1F00D24FF3A6FFE3AE /* GithubCopilotNotify.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GithubCopilotNotify.entitlements; sourceTree = "<group>"; };
+		B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainCookieStorage.swift; sourceTree = "<group>"; };
 		E56096462DB8460AA12DD252 /* GithubCopilotNotify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GithubCopilotNotify.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F66258C3FC184E12AFCF222A /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		F8D2244C02F744C5B519431C /* GitHubOAuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubOAuthClient.swift; sourceTree = "<group>"; };
@@ -51,6 +53,7 @@
 				96CF65B19B4A4B958DB86DF4 /* Info.plist */,
 				0E86BFF0B2CBA74F75E46B0B /* GitHubWebAuthClient.swift */,
 				69158FC52CD015D8E7CA7B34 /* CopilotSessionAPI.swift */,
+				B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */,
 				048DCBE02F16DCA5003E8627 /* Assets.xcassets */,
 			);
 			path = GithubCopilotNotify;
@@ -147,6 +150,7 @@
 				48BC94019A3F4F23BEFFF70E /* GitHubOAuthClient.swift in Sources */,
 				7FA004F482993A5A0BDCAF79 /* GitHubWebAuthClient.swift in Sources */,
 				2C9FD41F5451B922CF771A57 /* CopilotSessionAPI.swift in Sources */,
+				A1B2C3D4E5F64718901234AB /* KeychainCookieStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
