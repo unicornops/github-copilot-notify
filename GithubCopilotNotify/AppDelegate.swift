@@ -36,6 +36,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startUpdating() {
+        stopUpdating() // Clear any existing timer
+
+        // Only start timer if authenticated
+        guard sessionAPIClient.hasCookies() else {
+            updateStatusBar(text: "Not Signed In")
+            return
+        }
+
         Task {
             await updateUsage()
         }
@@ -45,6 +53,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 await self?.updateUsage()
             }
         }
+    }
+
+    private func stopUpdating() {
+        updateTimer?.invalidate()
+        updateTimer = nil
     }
 
     private func updateUsage() async {
@@ -89,6 +102,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func signOut() {
+        stopUpdating() // Stop timer when signing out
         sessionAPIClient.clearCookies()
         updateStatusBar(text: "Signed Out")
 
@@ -116,9 +130,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             print("✅ Received \(cookies.count) cookies from authentication")
 
-            // Cookies are automatically saved to HTTPCookieStorage by GitHubWebAuthClient
-            // Just trigger a refresh to fetch usage
-            await updateUsage()
+            // Cookies are automatically saved to Keychain by GitHubWebAuthClient
+            // Restart the timer and fetch usage
+            startUpdating()
 
             DispatchQueue.main.async {
                 self.showSuccess(message: "Successfully signed in to GitHub!")
@@ -156,6 +170,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        updateTimer?.invalidate()
+        stopUpdating()
     }
 }
