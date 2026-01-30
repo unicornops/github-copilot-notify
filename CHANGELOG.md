@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.2.5 - 2026-01-30
+#### Bug Fixes
+- (**security**) address high priority security audit findings - (375c003) - Rob Lazzurs
+
+- - -
+
 ## v0.2.4 - 2026-01-29
 #### Bug Fixes
 - (**security**) enable app sandbox and migrate cookies to Keychain - (ec00c4c) - Rob Lazzurs
