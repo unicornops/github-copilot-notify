@@ -10,8 +10,7 @@
 		048DCBE12F16DCA5003E8627 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 048DCBE02F16DCA5003E8627 /* Assets.xcassets */; };
 		0AA4ECFF47E34B62B271584B /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F66258C3FC184E12AFCF222A /* main.swift */; };
 		2C9FD41F5451B922CF771A57 /* CopilotSessionAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69158FC52CD015D8E7CA7B34 /* CopilotSessionAPI.swift */; };
-		31852A3B7998452D8A852B16 /* CopilotAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 062F0E3317B94B4197BD8285 /* CopilotAPI.swift */; };
-		48BC94019A3F4F23BEFFF70E /* GitHubOAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D2244C02F744C5B519431C /* GitHubOAuthClient.swift */; };
+
 		7FA004F482993A5A0BDCAF79 /* GitHubWebAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E86BFF0B2CBA74F75E46B0B /* GitHubWebAuthClient.swift */; };
 		9138FFC26BEA427E90F28977 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E5B12AEE334155BE153823 /* AppDelegate.swift */; };
 		A1B2C3D4E5F64718901234AB /* KeychainCookieStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */; };
@@ -19,7 +18,6 @@
 
 /* Begin PBXFileReference section */
 		048DCBE02F16DCA5003E8627 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		062F0E3317B94B4197BD8285 /* CopilotAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotAPI.swift; sourceTree = "<group>"; };
 		0E86BFF0B2CBA74F75E46B0B /* GitHubWebAuthClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GitHubWebAuthClient.swift; sourceTree = "<group>"; };
 		17E5B12AEE334155BE153823 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		69158FC52CD015D8E7CA7B34 /* CopilotSessionAPI.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CopilotSessionAPI.swift; sourceTree = "<group>"; };
@@ -28,7 +26,6 @@
 		B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainCookieStorage.swift; sourceTree = "<group>"; };
 		E56096462DB8460AA12DD252 /* GithubCopilotNotify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GithubCopilotNotify.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F66258C3FC184E12AFCF222A /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		F8D2244C02F744C5B519431C /* GitHubOAuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubOAuthClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,8 +44,6 @@
 			children = (
 				F66258C3FC184E12AFCF222A /* main.swift */,
 				17E5B12AEE334155BE153823 /* AppDelegate.swift */,
-				062F0E3317B94B4197BD8285 /* CopilotAPI.swift */,
-				F8D2244C02F744C5B519431C /* GitHubOAuthClient.swift */,
 				AA358A1F00D24FF3A6FFE3AE /* GithubCopilotNotify.entitlements */,
 				96CF65B19B4A4B958DB86DF4 /* Info.plist */,
 				0E86BFF0B2CBA74F75E46B0B /* GitHubWebAuthClient.swift */,
@@ -146,8 +141,6 @@
 			files = (
 				0AA4ECFF47E34B62B271584B /* main.swift in Sources */,
 				9138FFC26BEA427E90F28977 /* AppDelegate.swift in Sources */,
-				31852A3B7998452D8A852B16 /* CopilotAPI.swift in Sources */,
-				48BC94019A3F4F23BEFFF70E /* GitHubOAuthClient.swift in Sources */,
 				7FA004F482993A5A0BDCAF79 /* GitHubWebAuthClient.swift in Sources */,
 				2C9FD41F5451B922CF771A57 /* CopilotSessionAPI.swift in Sources */,
 				A1B2C3D4E5F64718901234AB /* KeychainCookieStorage.swift in Sources */,

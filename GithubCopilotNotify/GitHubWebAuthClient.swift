@@ -63,17 +63,44 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         }
     }
 
-    // Called when navigation completes
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        // Check if we're on a GitHub authenticated page
-        guard let url = webView.url?.absoluteString else { return }
+    // Restrict navigation to GitHub-owned domains only to prevent malicious redirects
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url,
+              let host = url.host else {
+            decisionHandler(.cancel)
+            return
+        }
+
+        // Allow only GitHub-owned domains
+        let allowedHosts = ["github.com", "github.githubassets.com", "avatars.githubusercontent.com"]
+        let isAllowed = allowedHosts.contains(host) || host.hasSuffix(".github.com")
 
         #if DEBUG
-        print("Navigated to: \(url)")
+        if !isAllowed {
+            print("Blocked navigation to non-GitHub domain: \(host)")
+        }
         #endif
 
-        // If user successfully logged in and reached GitHub.com
-        if url.hasPrefix("https://github.com/") && !url.contains("/login") && !url.contains("/sessions") {
+        decisionHandler(isAllowed ? .allow : .cancel)
+    }
+
+    // Called when navigation completes
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // Check if we're on a GitHub authenticated page using proper URL parsing
+        guard let url = webView.url,
+              let host = url.host,
+              host == "github.com" || host.hasSuffix(".github.com"),
+              url.scheme == "https" else { return }
+
+        let path = url.path
+
+        #if DEBUG
+        print("Navigated to GitHub path: \(path)")
+        #endif
+
+        // If user successfully logged in and reached GitHub.com (not login/sessions pages)
+        if !path.hasPrefix("/login") && !path.hasPrefix("/sessions") {
             #if DEBUG
             print("Login detected, extracting cookies...")
             #endif
