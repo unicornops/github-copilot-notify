@@ -10,7 +10,7 @@
 		048DCBE12F16DCA5003E8627 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 048DCBE02F16DCA5003E8627 /* Assets.xcassets */; };
 		0AA4ECFF47E34B62B271584B /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = F66258C3FC184E12AFCF222A /* main.swift */; };
 		2C9FD41F5451B922CF771A57 /* CopilotSessionAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69158FC52CD015D8E7CA7B34 /* CopilotSessionAPI.swift */; };
-
+		C3D4E5F6A7B8C901234567EF /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C9012345678ABC /* PrivacyInfo.xcprivacy */; };
 		7FA004F482993A5A0BDCAF79 /* GitHubWebAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E86BFF0B2CBA74F75E46B0B /* GitHubWebAuthClient.swift */; };
 		9138FFC26BEA427E90F28977 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E5B12AEE334155BE153823 /* AppDelegate.swift */; };
 		A1B2C3D4E5F64718901234AB /* KeychainCookieStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */; };
@@ -24,6 +24,7 @@
 		96CF65B19B4A4B958DB86DF4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA358A1F00D24FF3A6FFE3AE /* GithubCopilotNotify.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GithubCopilotNotify.entitlements; sourceTree = "<group>"; };
 		B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainCookieStorage.swift; sourceTree = "<group>"; };
+		D4E5F6A7B8C9012345678ABC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		E56096462DB8460AA12DD252 /* GithubCopilotNotify.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GithubCopilotNotify.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F66258C3FC184E12AFCF222A /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -46,6 +47,7 @@
 				17E5B12AEE334155BE153823 /* AppDelegate.swift */,
 				AA358A1F00D24FF3A6FFE3AE /* GithubCopilotNotify.entitlements */,
 				96CF65B19B4A4B958DB86DF4 /* Info.plist */,
+				D4E5F6A7B8C9012345678ABC /* PrivacyInfo.xcprivacy */,
 				0E86BFF0B2CBA74F75E46B0B /* GitHubWebAuthClient.swift */,
 				69158FC52CD015D8E7CA7B34 /* CopilotSessionAPI.swift */,
 				B2C3D4E5F6A7489012345BCD /* KeychainCookieStorage.swift */,
@@ -129,6 +131,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				048DCBE12F16DCA5003E8627 /* Assets.xcassets in Resources */,
+				C3D4E5F6A7B8C901234567EF /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

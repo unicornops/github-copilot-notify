@@ -38,20 +38,25 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent() // Use fresh session each time
 
-        // Create WebView
-        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: configuration)
+        // Create WebView with larger default size for better visibility of security indicators
+        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 1024, height: 768), configuration: configuration)
         webView.navigationDelegate = self
+
+        // Set custom user agent to identify the app for GitHub security monitoring
+        webView.customUserAgent = "GithubCopilotNotify/1.0 (macOS; WebKit)"
+
         self.webView = webView
 
-        // Create window
+        // Create window with resizable and miniaturizable styles for accessibility
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-            styleMask: [.titled, .closable, .resizable],
+            contentRect: NSRect(x: 0, y: 0, width: 1024, height: 768),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Sign in to GitHub"
         window.contentView = webView
+        window.minSize = NSSize(width: 800, height: 600)  // Minimum size for usability
         window.center()
         window.makeKeyAndOrderFront(nil)
         window.delegate = self

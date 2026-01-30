@@ -70,14 +70,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             let percentage = try await sessionAPIClient.fetchUsagePercentage()
             updateStatusBar(text: String(format: "%.1f%%", percentage))
-        } catch {
-            updateStatusBar(text: "Error")
-            print("Failed to fetch usage: \(error)")
-
-            // If authentication error, might need to re-sign in
-            if (error as? URLError)?.code == .userAuthenticationRequired {
+        } catch let error as URLError {
+            // Handle specific URL errors for better user feedback
+            switch error.code {
+            case .userAuthenticationRequired:
                 updateStatusBar(text: "Session Expired")
+                stopUpdating()  // Stop polling when session is expired
+            case .notConnectedToInternet, .networkConnectionLost:
+                updateStatusBar(text: "Offline")
+            case .timedOut:
+                updateStatusBar(text: "Timeout")
+            case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                updateStatusBar(text: "No Connection")
+            case .secureConnectionFailed, .serverCertificateUntrusted:
+                updateStatusBar(text: "Security Error")
+            default:
+                updateStatusBar(text: "Error")
             }
+            #if DEBUG
+            print("API error (\(error.code.rawValue)): \(error.localizedDescription)")
+            #endif
+        } catch {
+            // Handle non-URLError cases (e.g., JSON decoding errors)
+            updateStatusBar(text: "Error")
+            #if DEBUG
+            print("Failed to fetch usage: \(error)")
+            #endif
         }
     }
 
