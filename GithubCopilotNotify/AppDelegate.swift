@@ -18,12 +18,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            if let icon = NSImage(named: "MenuBarIcon") {
-                icon.isTemplate = true
-                button.image = icon
-                button.imagePosition = .imageLeft
-            }
-            button.title = " --"
+            button.title = "🔀 --"
         }
 
         let menu = NSMenu()
@@ -107,7 +102,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateStatusBar(text: String) {
         DispatchQueue.main.async { [weak self] in
             if let button = self?.statusItem.button {
-                button.title = " \(text)"
+                button.title = "🔀 \(text)"
             }
         }
     }
