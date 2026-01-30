@@ -18,7 +18,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            button.title = "Copilot: --"
+            if let icon = NSImage(named: "MenuBarIcon") {
+                icon.isTemplate = true
+                button.image = icon
+                button.imagePosition = .imageLeft
+            }
+            button.title = " --"
         }
 
         let menu = NSMenu()
@@ -69,7 +74,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         do {
             let percentage = try await sessionAPIClient.fetchUsagePercentage()
-            updateStatusBar(text: String(format: "%.1f%%", percentage))
+            updateStatusBar(text: String(format: "%.0f%%", percentage))
         } catch let error as URLError {
             // Handle specific URL errors for better user feedback
             switch error.code {
@@ -102,7 +107,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateStatusBar(text: String) {
         DispatchQueue.main.async { [weak self] in
             if let button = self?.statusItem.button {
-                button.title = "Copilot: \(text)"
+                button.title = " \(text)"
             }
         }
     }
