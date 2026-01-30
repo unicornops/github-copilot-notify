@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.3.1 - 2026-01-30
+#### Bug Fixes
+- (**ui**) use emoji instead of icon in menu bar - (7c1125f) - Rob Lazzurs
+
+- - -
+
 ## v0.3.0 - 2026-01-30
 #### Features
 - (**ui**) use icon instead of text prefix in menu bar - (3461db9) - Rob Lazzurs
