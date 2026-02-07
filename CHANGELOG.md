@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.4.0 - 2026-02-07
+#### Features
+- add App Store release workflow and build script - (5839d2e) - Rob Lazzurs
+
+- - -
+
 ## v0.3.1 - 2026-01-30
 #### Bug Fixes
 - (**ui**) use emoji instead of icon in menu bar - (7c1125f) - Rob Lazzurs
