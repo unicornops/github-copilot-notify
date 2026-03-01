@@ -130,6 +130,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             alert.informativeText = "You have been signed out of GitHub. Sign in again to view your Copilot usage."
             alert.alertStyle = .informational
             alert.addButton(withTitle: "OK")
+            self.activateApp()
             alert.runModal()
         }
     }
@@ -151,10 +152,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Cookies are automatically saved to Keychain by GitHubWebAuthClient
             // Restart the timer and fetch usage
             startUpdating()
-
-            DispatchQueue.main.async {
-                self.showSuccess(message: "Successfully signed in to GitHub!")
-            }
         } catch {
             print("Web auth error: \(error)")
             updateStatusBar(text: "Sign In Failed")
@@ -165,21 +162,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func activateApp() {
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
     private func showError(message: String) {
         let alert = NSAlert()
         alert.messageText = "Error"
         alert.informativeText = message
         alert.alertStyle = .critical
         alert.addButton(withTitle: "OK")
-        alert.runModal()
-    }
-
-    private func showSuccess(message: String) {
-        let alert = NSAlert()
-        alert.messageText = "Success"
-        alert.informativeText = message
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
+        activateApp()
         alert.runModal()
     }
 
