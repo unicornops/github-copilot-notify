@@ -76,11 +76,15 @@ enum CertificatePinningError: Error, LocalizedError {
 }
 
 final class GitHubCertificatePinner {
-    // Historical GitHub HPKP pins (SHA-256 of SPKI); includes primary + backup.
-    // Keep at least two pins to support rotations.
+    // GitHub certificate chain SPKI pins (SHA-256, base64) captured from live chain.
+    // Includes leaf + intermediate + root; any chain key match is accepted.
     private let allowedSPKISHA256Base64: Set<String> = [
-        "WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=", // pragma: allowlist secret
-        "JbQbUG5JMJUoI6brnx0x3vZF6jilxsapbXGVfjhN8Fg=" // pragma: allowlist secret
+        // github.com leaf key (2026-03-01)
+        "HKlrX9VOPI9IC6usNi99M9wgWigfPdJmPCF7IPg0BVE=", // pragma: allowlist secret
+        // Sectigo Public Server Authentication CA DV E36
+        "ZSagvDzjltLkewXEBuDxIzpW/dpVw1Juvvmd0hhkzdY=", // pragma: allowlist secret
+        // Sectigo Public Server Authentication Root E46
+        "sLVjNUaFYfW7n6EtgBeEpjOlcnBdNPMrZDRF36iwBdE=" // pragma: allowlist secret
     ]
 
     private let host = "github.com"
