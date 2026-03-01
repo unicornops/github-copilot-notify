@@ -1,5 +1,6 @@
 import Cocoa
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var sessionAPIClient: CopilotSessionAPIClient!
@@ -100,10 +101,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateStatusBar(text: String) {
-        DispatchQueue.main.async { [weak self] in
-            if let button = self?.statusItem.button {
-                button.title = "🔀 \(text)"
-            }
+        if let button = statusItem.button {
+            button.title = "🔀 \(text)"
         }
     }
 
@@ -124,14 +123,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         sessionAPIClient.clearCookies()
         updateStatusBar(text: "Signed Out")
 
-        DispatchQueue.main.async {
-            let alert = NSAlert()
-            alert.messageText = "Signed Out"
-            alert.informativeText = "You have been signed out of GitHub. Sign in again to view your Copilot usage."
-            alert.alertStyle = .informational
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-        }
+        let alert = NSAlert()
+        alert.messageText = "Signed Out"
+        alert.informativeText = "You have been signed out of GitHub. Sign in again to view your Copilot usage."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
     }
 
     @objc private func openGitHubSettings() {
@@ -151,17 +149,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Cookies are automatically saved to Keychain by GitHubWebAuthClient
             // Restart the timer and fetch usage
             startUpdating()
-
-            DispatchQueue.main.async {
-                self.showSuccess(message: "Successfully signed in to GitHub!")
-            }
         } catch {
             print("Web auth error: \(error)")
             updateStatusBar(text: "Sign In Failed")
-
-            DispatchQueue.main.async {
-                self.showError(message: "Failed to sign in: \(error.localizedDescription)")
-            }
+            showError(message: "Failed to sign in: \(error.localizedDescription)")
         }
     }
 
@@ -171,15 +162,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.informativeText = message
         alert.alertStyle = .critical
         alert.addButton(withTitle: "OK")
-        alert.runModal()
-    }
-
-    private func showSuccess(message: String) {
-        let alert = NSAlert()
-        alert.messageText = "Success"
-        alert.informativeText = message
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }
 
