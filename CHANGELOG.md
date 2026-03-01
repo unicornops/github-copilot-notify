@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.4.6 - 2026-03-01
+#### Bug Fixes
+- Migrate Keychain cookie storage to JSON format - (28c84af) - Rob Lazzurs
+
+- - -
+
 ## v0.4.5 - 2026-03-01
 #### Bug Fixes
 - Fix session cookie detection logic in KeychainCookieStorage - (07339c4) - Rob Lazzurs
