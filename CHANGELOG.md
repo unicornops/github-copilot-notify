@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.4.1 - 2026-03-01
+#### Bug Fixes
+- Remove @MainActor and use availability-aware app activation to fix build failure - (cb701ec) - copilot-swe-agent[bot]
+- Fix crash after sign in by ensuring main actor isolation and proper app activation - (ff9105b) - copilot-swe-agent[bot]
+#### Documentation
+- update README to reflect current WebKit-based sign-in flow - (db62100) - copilot-swe-agent[bot]
+
+- - -
+
 ## v0.4.0 - 2026-02-07
 #### Features
 - add App Store release workflow and build script - (5839d2e) - Rob Lazzurs
