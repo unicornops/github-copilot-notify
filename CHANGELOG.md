@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.4.3 - 2026-03-01
+#### Bug Fixes
+- Update certificate pinning and improve WebAuth window handling - (b9e25f6) - Rob Lazzurs
+
+- - -
+
 ## v0.4.2 - 2026-03-01
 #### Bug Fixes
 - Post login crash - (0eee21f) - Rob Lazzurs
