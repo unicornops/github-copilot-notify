@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.4.5 - 2026-03-01
+#### Bug Fixes
+- Fix session cookie detection logic in KeychainCookieStorage - (07339c4) - Rob Lazzurs
+
+- - -
+
 ## v0.4.4 - 2026-03-01
 #### Bug Fixes
 - Improve session cookie detection and retry logic - (d1c6333) - Rob Lazzurs
