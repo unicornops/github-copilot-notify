@@ -1,6 +1,5 @@
 import Cocoa
 
-@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var sessionAPIClient: CopilotSessionAPIClient!
@@ -101,8 +100,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateStatusBar(text: String) {
-        if let button = statusItem.button {
-            button.title = "🔀 \(text)"
+        DispatchQueue.main.async { [weak self] in
+            if let button = self?.statusItem.button {
+                button.title = "🔀 \(text)"
+            }
         }
     }
 
@@ -123,13 +124,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         sessionAPIClient.clearCookies()
         updateStatusBar(text: "Signed Out")
 
-        let alert = NSAlert()
-        alert.messageText = "Signed Out"
-        alert.informativeText = "You have been signed out of GitHub. Sign in again to view your Copilot usage."
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Signed Out"
+            alert.informativeText = "You have been signed out of GitHub. Sign in again to view your Copilot usage."
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            self.activateApp()
+            alert.runModal()
+        }
     }
 
     @objc private func openGitHubSettings() {
@@ -152,7 +155,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             print("Web auth error: \(error)")
             updateStatusBar(text: "Sign In Failed")
-            showError(message: "Failed to sign in: \(error.localizedDescription)")
+
+            DispatchQueue.main.async {
+                self.showError(message: "Failed to sign in: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func activateApp() {
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 
@@ -162,7 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.informativeText = message
         alert.alertStyle = .critical
         alert.addButton(withTitle: "OK")
-        NSApp.activate(ignoringOtherApps: true)
+        activateApp()
         alert.runModal()
     }
 

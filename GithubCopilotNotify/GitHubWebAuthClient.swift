@@ -58,7 +58,11 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         window.contentView = webView
         window.minSize = NSSize(width: 800, height: 600)  // Minimum size for usability
         window.center()
-        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
         window.makeKeyAndOrderFront(nil)
         window.delegate = self
         self.window = window
