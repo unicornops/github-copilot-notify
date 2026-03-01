@@ -90,6 +90,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             #if DEBUG
             print("API error (\(error.code.rawValue)): \(error.localizedDescription)")
             #endif
+        } catch is CertificatePinningError {
+            updateStatusBar(text: "Security Error")
+            #if DEBUG
+            print("Certificate pinning validation failed")
+            #endif
         } catch {
             // Handle non-URLError cases (e.g., JSON decoding errors)
             updateStatusBar(text: "Error")

@@ -7,6 +7,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private var webView: WKWebView?
     private var continuation: CheckedContinuation<[String: String], Error>?
     private var didCompleteAuthentication = false
+    private var isWindowClosing = false
 
     enum AuthError: Error, LocalizedError {
         case userCancelled
@@ -36,6 +37,8 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
 
     @MainActor
     private func showLoginWindow() {
+        isWindowClosing = false
+
         // Create WebView configuration
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent() // Use fresh session each time
@@ -56,6 +59,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
             backing: .buffered,
             defer: false
         )
+        window.isReleasedWhenClosed = false
         window.title = "Sign in to GitHub"
         window.contentView = webView
         window.minSize = NSSize(width: 800, height: 600)  // Minimum size for usability
@@ -181,12 +185,34 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private func closeWindowSync() {
         // Must be called from main thread
         assert(Thread.isMainThread, "closeWindowSync must be called from main thread")
-        window?.close()
+        guard let window else {
+            cleanupWindowReferences()
+            return
+        }
+
+        if isWindowClosing {
+            cleanupWindowReferences()
+            return
+        }
+
+        isWindowClosing = true
+        window.delegate = nil
+        window.orderOut(nil)
+        window.close()
+        cleanupWindowReferences()
+    }
+
+    private func cleanupWindowReferences() {
+        window?.delegate = nil
+        webView?.navigationDelegate = nil
         window = nil
         webView = nil
     }
 
-    private func completeAuthentication(with result: Result<[String: String], Error>) {
+    private func completeAuthentication(
+        with result: Result<[String: String], Error>,
+        shouldCloseWindow: Bool = true
+    ) {
         assert(Thread.isMainThread, "completeAuthentication must be called from main thread")
         guard !didCompleteAuthentication else { return }
         didCompleteAuthentication = true
@@ -198,13 +224,18 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
             continuation?.resume(throwing: error)
         }
         continuation = nil
-        closeWindowSync()
+        if shouldCloseWindow {
+            closeWindowSync()
+        } else {
+            cleanupWindowReferences()
+        }
     }
 }
 
 // Window delegate to handle window closure
 extension GitHubWebAuthClient: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        completeAuthentication(with: .failure(AuthError.userCancelled))
+        isWindowClosing = true
+        completeAuthentication(with: .failure(AuthError.userCancelled), shouldCloseWindow: false)
     }
 }
