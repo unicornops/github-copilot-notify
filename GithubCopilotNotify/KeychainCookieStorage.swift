@@ -178,13 +178,15 @@ class KeychainCookieStorage {
     }
 
     private func hasAuthenticatedSessionCookie(_ cookies: [HTTPCookie]) -> Bool {
-        let cookieValues = Dictionary(uniqueKeysWithValues: cookies.map { ($0.name, $0.value) })
         let hasUserSession = cookies.contains { cookie in
             cookie.name == "user_session" || cookie.name.contains("user_session")
         }
-        let hasGitHubSession = cookieValues["_gh_sess"] != nil
-        let loggedInValue = cookieValues["logged_in"]?.lowercased()
-        let hasLoggedInMarker = loggedInValue == "yes" || loggedInValue == "true" || loggedInValue == "1"
+        let hasGitHubSession = cookies.contains { $0.name == "_gh_sess" }
+        let hasLoggedInMarker = cookies.contains { cookie in
+            guard cookie.name == "logged_in" else { return false }
+            let value = cookie.value.lowercased()
+            return value == "yes" || value == "true" || value == "1"
+        }
         return hasUserSession || (hasGitHubSession && hasLoggedInMarker)
     }
 }
