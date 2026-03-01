@@ -8,6 +8,8 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private var continuation: CheckedContinuation<[String: String], Error>?
     private var didCompleteAuthentication = false
     private var isWindowClosing = false
+    private let cookieRetryLimit = 20
+    private let cookieRetryDelay: TimeInterval = 0.5
 
     enum AuthError: Error, LocalizedError {
         case userCancelled
@@ -110,21 +112,17 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
               url.scheme == "https" else { return }
 
         let path = url.path
+        let isSignInPage = path.hasPrefix("/login") || path.hasPrefix("/sessions")
 
         #if DEBUG
         print("Navigated to GitHub path: \(path)")
         #endif
 
-        // If user successfully logged in and reached GitHub.com (not login/sessions pages)
-        if !path.hasPrefix("/login") && !path.hasPrefix("/sessions") {
-            #if DEBUG
-            print("Login detected, extracting cookies...")
-            #endif
-            extractCookies()
-        }
+        // Extract on all GitHub pages, but only retry on post-login pages.
+        extractCookies(retryCount: 0, allowRetry: !isSignInPage)
     }
 
-    private func extractCookies() {
+    private func extractCookies(retryCount: Int, allowRetry: Bool) {
         guard let webView = webView else {
             DispatchQueue.main.async { [weak self] in
                 self?.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
@@ -147,8 +145,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
             print("Found \(cookieDict.count) GitHub cookies")
             #endif
 
-            // Check for required cookies
-            if cookieDict["user_session"] != nil {
+            if self.hasAuthenticatedSessionCookie(cookieDict) {
                 #if DEBUG
                 print("Successfully extracted session cookies")
                 #endif
@@ -161,9 +158,37 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
                 }
             } else {
                 #if DEBUG
-                print("No user_session cookie found, waiting for login...")
+                let cookieNames = cookieDict.keys.sorted().joined(separator: ", ")
+                print("Session cookie not ready yet. Names: [\(cookieNames)]")
                 #endif
+                self.retryCookieExtractionIfNeeded(retryCount: retryCount, allowRetry: allowRetry)
             }
+        }
+    }
+
+    private func hasAuthenticatedSessionCookie(_ cookieDict: [String: String]) -> Bool {
+        let hasUserSession = cookieDict.keys.contains { name in
+            name == "user_session" || name.contains("user_session")
+        }
+        let hasGitHubSession = cookieDict["_gh_sess"] != nil
+        let loggedInValue = cookieDict["logged_in"]?.lowercased()
+        let hasLoggedInMarker = loggedInValue == "yes" || loggedInValue == "true" || loggedInValue == "1"
+        return hasUserSession || (hasGitHubSession && hasLoggedInMarker)
+    }
+
+    private func retryCookieExtractionIfNeeded(retryCount: Int, allowRetry: Bool) {
+        guard allowRetry, !didCompleteAuthentication else { return }
+        guard retryCount < cookieRetryLimit else {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, !self.didCompleteAuthentication else { return }
+                self.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
+            }
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + cookieRetryDelay) { [weak self] in
+            guard let self, !self.didCompleteAuthentication else { return }
+            self.extractCookies(retryCount: retryCount + 1, allowRetry: allowRetry)
         }
     }
 
