@@ -150,8 +150,22 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
                 print("Successfully extracted session cookies")
                 #endif
 
-                // Save cookies to persistent store for future use
-                self.saveCookiesToPersistentStore(cookies: cookies)
+                // Save cookies to persistent store - fail auth if save fails
+                do {
+                    try KeychainCookieStorage.shared.saveCookies(cookies)
+                    #if DEBUG
+                    let savedCount = cookies.filter { $0.domain.contains("github.com") }.count
+                    print("Saved \(savedCount) cookies to Keychain")
+                    #endif
+                } catch {
+                    #if DEBUG
+                    print("Failed to save cookies to Keychain: \(error)")
+                    #endif
+                    DispatchQueue.main.async {
+                        self.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
+                    }
+                    return
+                }
 
                 DispatchQueue.main.async {
                     self.completeAuthentication(with: .success(cookieDict))
@@ -189,21 +203,6 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + cookieRetryDelay) { [weak self] in
             guard let self, !self.didCompleteAuthentication else { return }
             self.extractCookies(retryCount: retryCount + 1, allowRetry: allowRetry)
-        }
-    }
-
-    private func saveCookiesToPersistentStore(cookies: [HTTPCookie]) {
-        // Save cookies to Keychain for secure persistence
-        do {
-            try KeychainCookieStorage.shared.saveCookies(cookies)
-            #if DEBUG
-            let savedCount = cookies.filter { $0.domain.contains("github.com") }.count
-            print("Saved \(savedCount) cookies to Keychain")
-            #endif
-        } catch {
-            #if DEBUG
-            print("Failed to save cookies to Keychain: \(error)")
-            #endif
         }
     }
 

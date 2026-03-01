@@ -1,6 +1,45 @@
 import Foundation
 import Security
 
+/// Serializable cookie representation using only simple types for reliable JSON encoding
+private struct SerializableCookie: Codable {
+    let name: String
+    let value: String
+    let domain: String
+    let path: String
+    let secure: Bool
+    let expiresDate: String?  // ISO 8601
+
+    init(from cookie: HTTPCookie) {
+        self.name = cookie.name
+        self.value = cookie.value
+        self.domain = cookie.domain
+        self.path = cookie.path
+        self.secure = cookie.isSecure
+        if let expires = cookie.expiresDate {
+            self.expiresDate = ISO8601DateFormatter().string(from: expires)
+        } else {
+            self.expiresDate = nil
+        }
+    }
+
+    func toHTTPCookie() -> HTTPCookie? {
+        var properties: [HTTPCookiePropertyKey: Any] = [
+            .name: name,
+            .value: value,
+            .domain: domain,
+            .path: path
+        ]
+        if secure {
+            properties[.secure] = "TRUE"
+        }
+        if let expiresDate, let date = ISO8601DateFormatter().date(from: expiresDate) {
+            properties[.expires] = date
+        }
+        return HTTPCookie(properties: properties)
+    }
+}
+
 /// Secure Keychain-based storage for GitHub session cookies
 class KeychainCookieStorage {
     static let shared = KeychainCookieStorage()
@@ -17,18 +56,8 @@ class KeychainCookieStorage {
 
         guard !githubCookies.isEmpty else { return }
 
-        // Convert cookies to archivable data
-        var cookieProperties: [[HTTPCookiePropertyKey: Any]] = []
-        for cookie in githubCookies {
-            if let properties = cookie.properties {
-                cookieProperties.append(properties)
-            }
-        }
-
-        let cookieData = try NSKeyedArchiver.archivedData(
-            withRootObject: cookieProperties,
-            requiringSecureCoding: false
-        )
+        let serializableCookies = githubCookies.map { SerializableCookie(from: $0) }
+        let cookieData = try JSONEncoder().encode(serializableCookies)
 
         // Delete any existing entry first
         let deleteQuery: [String: Any] = [
@@ -65,15 +94,25 @@ class KeychainCookieStorage {
             return []
         }
 
-        guard let cookies = parseCookiesFromData(data) else {
-            return []
+        // Try JSON format first (current)
+        if let cookies = parseCookiesFromJSON(data), !cookies.isEmpty {
+            #if DEBUG
+            print("Loaded \(cookies.count) cookies from Keychain")
+            #endif
+            return cookies
         }
 
-        #if DEBUG
-        print("Loaded \(cookies.count) cookies from Keychain")
-        #endif
+        // Fall back to legacy NSKeyedArchiver format for migration
+        if let cookies = parseCookiesFromArchive(data), !cookies.isEmpty {
+            #if DEBUG
+            print("Migrated \(cookies.count) cookies from legacy format")
+            #endif
+            // Re-save in new format
+            try? saveCookies(cookies)
+            return cookies
+        }
 
-        return cookies
+        return []
     }
 
     private func loadCookieDataFromKeychain() -> Data? {
@@ -100,48 +139,48 @@ class KeychainCookieStorage {
         return data
     }
 
-    private func parseCookiesFromData(_ data: Data) -> [HTTPCookie]? {
-        do {
-            guard let rawProperties = try NSKeyedUnarchiver.unarchivedObject(
-                ofClasses: [NSArray.self, NSDictionary.self, NSString.self, NSNumber.self, NSDate.self],
-                from: data
-            ) as? [Any] else {
-                return nil
-            }
-
-            return rawProperties.compactMap { rawDict -> HTTPCookie? in
-                guard let dict = rawDict as? [AnyHashable: Any] else { return nil }
-                let cookieProps = convertToCookieProperties(dict)
-                return createValidCookie(from: cookieProps)
-            }
-        } catch {
-            #if DEBUG
-            print("Failed to unarchive cookies: \(error)")
-            #endif
+    private func parseCookiesFromJSON(_ data: Data) -> [HTTPCookie]? {
+        guard let serializableCookies = try? JSONDecoder().decode([SerializableCookie].self, from: data) else {
             return nil
         }
-    }
 
-    private func convertToCookieProperties(_ dict: [AnyHashable: Any]) -> [HTTPCookiePropertyKey: Any] {
-        var cookieProps: [HTTPCookiePropertyKey: Any] = [:]
-        for (key, value) in dict {
-            if let stringKey = key as? String {
-                cookieProps[HTTPCookiePropertyKey(stringKey)] = value
-            } else if let propKey = key as? HTTPCookiePropertyKey {
-                cookieProps[propKey] = value
+        let cookies = serializableCookies.compactMap { serialized -> HTTPCookie? in
+            guard let cookie = serialized.toHTTPCookie() else { return nil }
+            // Filter expired cookies
+            if let expiresDate = cookie.expiresDate, expiresDate <= Date() {
+                return nil
             }
+            return cookie
         }
-        return cookieProps
+
+        return cookies
     }
 
-    private func createValidCookie(from properties: [HTTPCookiePropertyKey: Any]) -> HTTPCookie? {
-        guard let cookie = HTTPCookie(properties: properties) else { return nil }
+    /// Legacy format support for migration from NSKeyedArchiver
+    private func parseCookiesFromArchive(_ data: Data) -> [HTTPCookie]? {
+        guard let rawProperties = try? NSKeyedUnarchiver.unarchivedObject(
+            ofClasses: [NSArray.self, NSDictionary.self, NSString.self, NSNumber.self, NSDate.self, NSURL.self],
+            from: data
+        ) as? [Any] else {
+            return nil
+        }
 
-        // Session cookies (no expiry) are always valid
-        guard let expiresDate = cookie.expiresDate else { return cookie }
-
-        // Check if cookie is not expired
-        return expiresDate > Date() ? cookie : nil
+        return rawProperties.compactMap { rawDict -> HTTPCookie? in
+            guard let dict = rawDict as? [AnyHashable: Any] else { return nil }
+            var cookieProps: [HTTPCookiePropertyKey: Any] = [:]
+            for (key, value) in dict {
+                if let stringKey = key as? String {
+                    cookieProps[HTTPCookiePropertyKey(stringKey)] = value
+                } else if let propKey = key as? HTTPCookiePropertyKey {
+                    cookieProps[propKey] = value
+                }
+            }
+            guard let cookie = HTTPCookie(properties: cookieProps) else { return nil }
+            if let expiresDate = cookie.expiresDate, expiresDate <= Date() {
+                return nil
+            }
+            return cookie
+        }
     }
 
     /// Delete all stored cookies from the Keychain
