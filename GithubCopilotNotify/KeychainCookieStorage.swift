@@ -166,7 +166,7 @@ class KeychainCookieStorage {
     /// Check if we have a valid user_session cookie stored
     func hasValidSession() -> Bool {
         let cookies = loadCookies()
-        return cookies.contains { $0.name == "user_session" }
+        return hasAuthenticatedSessionCookie(cookies)
     }
 
     /// Get cookies formatted for URL request
@@ -175,6 +175,17 @@ class KeychainCookieStorage {
     func cookieHeaderFields(for url: URL) -> [String: String] {
         let cookies = loadCookies()
         return HTTPCookie.requestHeaderFields(with: cookies)
+    }
+
+    private func hasAuthenticatedSessionCookie(_ cookies: [HTTPCookie]) -> Bool {
+        let cookieValues = Dictionary(uniqueKeysWithValues: cookies.map { ($0.name, $0.value) })
+        let hasUserSession = cookies.contains { cookie in
+            cookie.name == "user_session" || cookie.name.contains("user_session")
+        }
+        let hasGitHubSession = cookieValues["_gh_sess"] != nil
+        let loggedInValue = cookieValues["logged_in"]?.lowercased()
+        let hasLoggedInMarker = loggedInValue == "yes" || loggedInValue == "true" || loggedInValue == "1"
+        return hasUserSession || (hasGitHubSession && hasLoggedInMarker)
     }
 }
 
