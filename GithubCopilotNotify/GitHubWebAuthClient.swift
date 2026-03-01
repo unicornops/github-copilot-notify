@@ -6,6 +6,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private var window: NSWindow?
     private var webView: WKWebView?
     private var continuation: CheckedContinuation<[String: String], Error>?
+    private var didCompleteAuthentication = false
 
     enum AuthError: Error, LocalizedError {
         case userCancelled
@@ -28,6 +29,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     func authenticate() async throws -> [String: String] {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
+            self.didCompleteAuthentication = false
             self.showLoginWindow()
         }
     }
@@ -121,9 +123,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private func extractCookies() {
         guard let webView = webView else {
             DispatchQueue.main.async { [weak self] in
-                self?.continuation?.resume(throwing: AuthError.cookieExtractionFailed)
-                self?.continuation = nil
-                self?.closeWindowSync()
+                self?.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
             }
             return
         }
@@ -153,9 +153,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
                 self.saveCookiesToPersistentStore(cookies: cookies)
 
                 DispatchQueue.main.async {
-                    self.continuation?.resume(returning: cookieDict)
-                    self.continuation = nil
-                    self.closeWindowSync()
+                    self.completeAuthentication(with: .success(cookieDict))
                 }
             } else {
                 #if DEBUG
@@ -187,14 +185,26 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         window = nil
         webView = nil
     }
+
+    private func completeAuthentication(with result: Result<[String: String], Error>) {
+        assert(Thread.isMainThread, "completeAuthentication must be called from main thread")
+        guard !didCompleteAuthentication else { return }
+        didCompleteAuthentication = true
+
+        switch result {
+        case .success(let cookies):
+            continuation?.resume(returning: cookies)
+        case .failure(let error):
+            continuation?.resume(throwing: error)
+        }
+        continuation = nil
+        closeWindowSync()
+    }
 }
 
 // Window delegate to handle window closure
 extension GitHubWebAuthClient: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        if continuation != nil {
-            continuation?.resume(throwing: AuthError.userCancelled)
-            continuation = nil
-        }
+        completeAuthentication(with: .failure(AuthError.userCancelled))
     }
 }

@@ -151,12 +151,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             // Cookies are automatically saved to Keychain by GitHubWebAuthClient
             // Restart the timer and fetch usage
-            startUpdating()
+            await MainActor.run {
+                self.startUpdating()
+            }
         } catch {
             print("Web auth error: \(error)")
             updateStatusBar(text: "Sign In Failed")
-
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.showError(message: "Failed to sign in: \(error.localizedDescription)")
             }
         }
