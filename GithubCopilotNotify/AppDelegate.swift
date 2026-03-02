@@ -36,9 +36,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startUpdating() {
-        stopUpdating() // Clear any existing timer
+        stopUpdating()
 
-        // Only start timer if authenticated
         guard sessionAPIClient.hasCookies() else {
             updateStatusBar(text: "Not Signed In")
             return
@@ -61,7 +60,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updateUsage() async {
-        // Check if we have cookies
         guard sessionAPIClient.hasCookies() else {
             updateStatusBar(text: "Not Signed In")
             return
@@ -71,11 +69,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let percentage = try await sessionAPIClient.fetchUsagePercentage()
             updateStatusBar(text: String(format: "%.0f%%", percentage))
         } catch let error as URLError {
-            // Handle specific URL errors for better user feedback
             switch error.code {
             case .userAuthenticationRequired:
                 updateStatusBar(text: "Session Expired")
-                stopUpdating()  // Stop polling when session is expired
+                stopUpdating()
             case .notConnectedToInternet, .networkConnectionLost:
                 updateStatusBar(text: "Offline")
             case .timedOut:
@@ -90,13 +87,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             #if DEBUG
             print("API error (\(error.code.rawValue)): \(error.localizedDescription)")
             #endif
-        } catch is CertificatePinningError {
-            updateStatusBar(text: "Security Error")
-            #if DEBUG
-            print("Certificate pinning validation failed")
-            #endif
         } catch {
-            // Handle non-URLError cases (e.g., JSON decoding errors)
             updateStatusBar(text: "Error")
             #if DEBUG
             print("Failed to fetch usage: \(error)")
@@ -125,7 +116,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func signOut() {
-        stopUpdating() // Stop timer when signing out
+        stopUpdating()
         sessionAPIClient.clearCookies()
         updateStatusBar(text: "Signed Out")
 
@@ -152,15 +143,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             let cookies = try await webAuthClient.authenticate()
 
-            print("✅ Received \(cookies.count) cookies from authentication")
+            #if DEBUG
+            print("Received \(cookies.count) cookies from authentication")
+            #endif
 
-            // Cookies are automatically saved to Keychain by GitHubWebAuthClient
-            // Restart the timer and fetch usage
+            // startUpdating() must run on main thread for Timer.scheduledTimer
             await MainActor.run {
                 self.startUpdating()
             }
         } catch {
+            #if DEBUG
             print("Web auth error: \(error)")
+            #endif
             updateStatusBar(text: "Sign In Failed")
             await MainActor.run {
                 self.showError(message: "Failed to sign in: \(error.localizedDescription)")
