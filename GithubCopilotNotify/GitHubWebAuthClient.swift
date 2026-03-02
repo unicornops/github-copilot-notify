@@ -8,7 +8,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private var continuation: CheckedContinuation<[String: String], Error>?
     private var didCompleteAuthentication = false
     private var isWindowClosing = false
-    private let cookieRetryLimit = 20
+    private let cookieRetryLimit = 30
     private let cookieRetryDelay: TimeInterval = 0.5
 
     enum AuthError: Error, LocalizedError {
@@ -41,20 +41,20 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private func showLoginWindow() {
         isWindowClosing = false
 
-        // Create WebView configuration
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .nonPersistent() // Use fresh session each time
+        // Use default data store for reliable cookie access.
+        // Clear GitHub cookies before login to get a fresh session.
+        let dataStore = WKWebsiteDataStore.default()
+        clearGitHubCookies(from: dataStore)
 
-        // Create WebView with larger default size for better visibility of security indicators
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = dataStore
+
         let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 1024, height: 768), configuration: configuration)
         webView.navigationDelegate = self
-
-        // Set custom user agent to identify the app for GitHub security monitoring
         webView.customUserAgent = "GithubCopilotNotify/1.0 (macOS; WebKit)"
 
         self.webView = webView
 
-        // Create window with resizable and miniaturizable styles for accessibility
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1024, height: 768),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
@@ -64,7 +64,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         window.isReleasedWhenClosed = false
         window.title = "Sign in to GitHub"
         window.contentView = webView
-        window.minSize = NSSize(width: 800, height: 600)  // Minimum size for usability
+        window.minSize = NSSize(width: 800, height: 600)
         window.center()
         if #available(macOS 14.0, *) {
             NSApp.activate()
@@ -75,54 +75,72 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         window.delegate = self
         self.window = window
 
-        // Load GitHub login page
         if let url = URL(string: "https://github.com/login") {
             webView.load(URLRequest(url: url))
         }
     }
 
-    // Restrict navigation to GitHub-owned domains only to prevent malicious redirects
+    private func clearGitHubCookies(from dataStore: WKWebsiteDataStore) {
+        dataStore.httpCookieStore.getAllCookies { cookies in
+            for cookie in cookies where cookie.domain.contains("github.com") {
+                dataStore.httpCookieStore.delete(cookie)
+            }
+        }
+    }
+
+    // Allow all HTTPS navigations during the login flow.
+    // GitHub login may require external domains for CAPTCHA challenges (Turnstile),
+    // SSO/SAML providers, and device verification flows.
+    // Security is maintained by only extracting github.com cookies after login.
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        guard let url = navigationAction.request.url,
-              let host = url.host else {
+        guard let url = navigationAction.request.url else {
             decisionHandler(.cancel)
             return
         }
 
-        // Allow only GitHub-owned domains
-        let allowedHosts = ["github.com", "github.githubassets.com", "avatars.githubusercontent.com"]
-        let isAllowed = allowedHosts.contains(host) || host.hasSuffix(".github.com")
+        // Allow all HTTPS navigations
+        if url.scheme == "https" {
+            decisionHandler(.allow)
+            return
+        }
+
+        // Allow about:blank (used internally by WebKit)
+        if url.scheme == "about" {
+            decisionHandler(.allow)
+            return
+        }
 
         #if DEBUG
-        if !isAllowed {
-            print("Blocked navigation to non-GitHub domain: \(host)")
-        }
+        print("Blocked non-HTTPS navigation: \(url)")
         #endif
 
-        decisionHandler(isAllowed ? .allow : .cancel)
+        decisionHandler(.cancel)
     }
 
-    // Called when navigation completes
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        // Check if we're on a GitHub authenticated page using proper URL parsing
         guard let url = webView.url,
               let host = url.host,
               host == "github.com" || host.hasSuffix(".github.com"),
               url.scheme == "https" else { return }
 
-        let path = url.path
-        let isSignInPage = path.hasPrefix("/login") || path.hasPrefix("/sessions")
-
         #if DEBUG
-        print("Navigated to GitHub path: \(path)")
+        print("Navigated to GitHub path: \(url.path)")
         #endif
 
-        // Extract on all GitHub pages, but only retry on post-login pages.
-        extractCookies(retryCount: 0, allowRetry: !isSignInPage)
+        // Don't start extraction on the initial login page load,
+        // but always retry on any page (including /sessions pages after 2FA etc.)
+        let path = url.path
+        let isInitialLoginPage = path == "/login" || path == "/login/"
+
+        if !isInitialLoginPage {
+            extractCookies(retryCount: 0)
+        }
     }
 
-    private func extractCookies(retryCount: Int, allowRetry: Bool) {
+    private func extractCookies(retryCount: Int) {
+        guard !didCompleteAuthentication else { return }
+
         guard let webView = webView else {
             DispatchQueue.main.async { [weak self] in
                 self?.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
@@ -133,50 +151,69 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
 
         cookieStore.getAllCookies { [weak self] cookies in
-            guard let self = self else { return }
+            guard let self = self, !self.didCompleteAuthentication else { return }
+            self.processCookies(cookies, retryCount: retryCount)
+        }
+    }
 
-            var cookieDict: [String: String] = [:]
+    private func processCookies(_ cookies: [HTTPCookie], retryCount: Int) {
+        var cookieDict: [String: String] = [:]
+        for cookie in cookies where cookie.domain.contains("github.com") {
+            cookieDict[cookie.name] = cookie.value
+        }
 
-            for cookie in cookies where cookie.domain.contains("github.com") {
-                cookieDict[cookie.name] = cookie.value
-            }
+        #if DEBUG
+        print("Cookie check #\(retryCount): found \(cookieDict.count) GitHub cookies")
+        #endif
 
+        if hasAuthenticatedSessionCookie(cookieDict) {
+            saveAndComplete(cookies: cookies, cookieDict: cookieDict)
+        } else {
+            scheduleRetry(retryCount: retryCount)
+        }
+    }
+
+    private func saveAndComplete(cookies: [HTTPCookie], cookieDict: [String: String]) {
+        #if DEBUG
+        print("Successfully extracted session cookies")
+        #endif
+
+        do {
+            try KeychainCookieStorage.shared.saveCookies(cookies)
             #if DEBUG
-            print("Found \(cookieDict.count) GitHub cookies")
+            let savedCount = cookies.filter { $0.domain.contains("github.com") }.count
+            print("Saved \(savedCount) cookies to Keychain")
             #endif
-
-            if self.hasAuthenticatedSessionCookie(cookieDict) {
-                #if DEBUG
-                print("Successfully extracted session cookies")
-                #endif
-
-                // Save cookies to persistent store - fail auth if save fails
-                do {
-                    try KeychainCookieStorage.shared.saveCookies(cookies)
-                    #if DEBUG
-                    let savedCount = cookies.filter { $0.domain.contains("github.com") }.count
-                    print("Saved \(savedCount) cookies to Keychain")
-                    #endif
-                } catch {
-                    #if DEBUG
-                    print("Failed to save cookies to Keychain: \(error)")
-                    #endif
-                    DispatchQueue.main.async {
-                        self.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
-                    }
-                    return
-                }
-
-                DispatchQueue.main.async {
-                    self.completeAuthentication(with: .success(cookieDict))
-                }
-            } else {
-                #if DEBUG
-                let cookieNames = cookieDict.keys.sorted().joined(separator: ", ")
-                print("Session cookie not ready yet. Names: [\(cookieNames)]")
-                #endif
-                self.retryCookieExtractionIfNeeded(retryCount: retryCount, allowRetry: allowRetry)
+        } catch {
+            #if DEBUG
+            print("Failed to save cookies to Keychain: \(error)")
+            #endif
+            DispatchQueue.main.async {
+                self.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
             }
+            return
+        }
+
+        DispatchQueue.main.async {
+            self.completeAuthentication(with: .success(cookieDict))
+        }
+    }
+
+    private func scheduleRetry(retryCount: Int) {
+        #if DEBUG
+        print("Session cookie not ready (attempt \(retryCount)/\(cookieRetryLimit))")
+        #endif
+
+        guard retryCount < cookieRetryLimit else {
+            #if DEBUG
+            print("Retry limit reached, waiting for next navigation")
+            #endif
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + cookieRetryDelay) { [weak self] in
+            guard let self, !self.didCompleteAuthentication else { return }
+            self.extractCookies(retryCount: retryCount + 1)
         }
     }
 
@@ -190,24 +227,7 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         return hasUserSession || (hasGitHubSession && hasLoggedInMarker)
     }
 
-    private func retryCookieExtractionIfNeeded(retryCount: Int, allowRetry: Bool) {
-        guard allowRetry, !didCompleteAuthentication else { return }
-        guard retryCount < cookieRetryLimit else {
-            DispatchQueue.main.async { [weak self] in
-                guard let self, !self.didCompleteAuthentication else { return }
-                self.completeAuthentication(with: .failure(AuthError.cookieExtractionFailed))
-            }
-            return
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + cookieRetryDelay) { [weak self] in
-            guard let self, !self.didCompleteAuthentication else { return }
-            self.extractCookies(retryCount: retryCount + 1, allowRetry: allowRetry)
-        }
-    }
-
     private func closeWindowSync() {
-        // Must be called from main thread
         assert(Thread.isMainThread, "closeWindowSync must be called from main thread")
         guard let window else {
             cleanupWindowReferences()
