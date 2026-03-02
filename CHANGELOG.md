@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.4.7 - 2026-03-02
+#### Bug Fixes
+- Improve GitHub login flow: allow all HTTPS, clear cookies before - (9187538) - Rob Lazzurs
+
+- - -
+
 ## v0.4.6 - 2026-03-01
 #### Bug Fixes
 - Migrate Keychain cookie storage to JSON format - (28c84af) - Rob Lazzurs
