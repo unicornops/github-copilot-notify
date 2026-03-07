@@ -2,6 +2,29 @@ import Foundation
 import AppKit
 import WebKit
 
+// WKWebView subclass that forwards common keyboard shortcuts (e.g. Cmd+V) to the responder chain,
+// allowing paste and other editing commands to work inside the embedded browser login window.
+private class EditableWebView: WKWebView {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.modifierFlags.contains(.command),
+              let key = event.charactersIgnoringModifiers else {
+            return super.performKeyEquivalent(with: event)
+        }
+        switch key {
+        case "v":
+            return NSApp.sendAction(#selector(NSText.paste(_:)), to: nil, from: self)
+        case "c":
+            return NSApp.sendAction(#selector(NSText.copy(_:)), to: nil, from: self)
+        case "x":
+            return NSApp.sendAction(#selector(NSText.cut(_:)), to: nil, from: self)
+        case "a":
+            return NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: self)
+        default:
+            return super.performKeyEquivalent(with: event)
+        }
+    }
+}
+
 class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
     private var window: NSWindow?
     private var webView: WKWebView?
@@ -39,7 +62,8 @@ class GitHubWebAuthClient: NSObject, WKNavigationDelegate {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
 
-        let webView = WKWebView(
+        // Create WebView with larger default size for better visibility of security indicators
+        let webView = EditableWebView(
             frame: NSRect(x: 0, y: 0, width: 1024, height: 768),
             configuration: configuration
         )
