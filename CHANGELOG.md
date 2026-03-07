@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.6.0](https://github.com/unicornops/github-copilot-notify/compare/v0.5.0...v0.6.0) (2026-03-07)
+
+
+### Features
+
+* Consolidate release build workflow into release-please pipeline ([#30](https://github.com/unicornops/github-copilot-notify/issues/30)) ([401f87f](https://github.com/unicornops/github-copilot-notify/commit/401f87f93e4cd547e39f0f45bbd8fd7413ca14c3))
+
 ## [0.5.0](https://github.com/unicornops/github-copilot-notify/compare/v0.4.8...v0.5.0) (2026-03-07)
 
 
