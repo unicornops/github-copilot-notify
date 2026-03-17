@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.6.1](https://github.com/unicornops/github-copilot-notify/compare/v0.6.0...v0.6.1) (2026-03-17)
+
+
+### Chores
+
+* **docs:** Revamp README with screenshot, clearer setup, and privacy ([#33](https://github.com/unicornops/github-copilot-notify/issues/33)) ([30a89f4](https://github.com/unicornops/github-copilot-notify/commit/30a89f400907e431be78be6a616374bfa2d5fa0a))
+
 ## [0.6.0](https://github.com/unicornops/github-copilot-notify/compare/v0.5.0...v0.6.0) (2026-03-07)
 
 
